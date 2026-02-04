@@ -12,9 +12,7 @@ class AuthController extends Controller
 {
     public function redirect()
     {
-        return response()->json([
-            'url' => Socialite::driver('discord')->scopes(['identify', 'email'])->stateless()->redirect()->getTargetUrl(),
-        ]);
+        return Socialite::driver('discord')->scopes(['identify', 'email'])->redirect();
     }
 
     public function callback()
@@ -22,7 +20,15 @@ class AuthController extends Controller
         try {
             $discordUser = Socialite::driver('discord')->stateless()->user();
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to login with Discord.'], 401);
+            // Log the actual error for debugging
+            \Log::error('Discord OAuth failed: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Redirect to frontend with error
+            $frontendUrl = config('app.frontend_url', 'http://localhost:5173');
+            return redirect($frontendUrl . '/login?error=discord_auth_failed&detail=' . urlencode($e->getMessage()));
         }
 
         $user = User::updateOrCreate(
@@ -39,10 +45,9 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'token' => $token,
-            'user' => $user
-        ]);
+        // Redirect to frontend with token
+        $frontendUrl = config('app.frontend_url', 'http://localhost:5173');
+        return redirect($frontendUrl . '/auth/callback?token=' . $token);
     }
 
     public function logout(Request $request)

@@ -30,11 +30,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// Auth (Discord)
-// Note: Frontend will handle the redirect initiation or popup. 
-// We might need an endpoint to get the redirect URL if doing it from backend.
-Route::get('/auth/discord/url', [AuthController::class, 'redirect'])->name('auth.discord.url');
-Route::get('/auth/discord/callback', [AuthController::class, 'callback']);
+// Logout endpoint
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function () {
