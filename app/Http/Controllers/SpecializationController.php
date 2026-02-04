@@ -10,7 +10,7 @@ class SpecializationController extends Controller
     public function index()
     {
         $specializations = Specialization::where('is_active', true)->get();
-        return view('specialization.index', compact('specializations'));
+        return response()->json($specializations);
     }
 
     public function store(Request $request)
@@ -19,7 +19,10 @@ class SpecializationController extends Controller
             'specialization_id' => 'required|exists:specializations,id',
         ]);
 
-        // Proceed to quiz start
-        return redirect()->route('quiz.start', ['specialization' => $request->specialization_id]);
+        // Just update prompt or ensure frontend knows what to do
+        return response()->json([
+            'message' => 'Specialization selected', 
+            'specialization_id' => $request->specialization_id
+        ]);
     }
 }

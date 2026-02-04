@@ -11,13 +11,9 @@ class ResultController extends Controller
     public function show(Test $test, DiscordBotService $discord)
     {
         if ($test->user_id !== auth()->id()) {
-            abort(403);
+            return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // If passed and not yet assigned role (maybe checks if role assigned?)
-        // Ideally we should assign role immediately upon passing in Service or Event, 
-        // but Controller is fine for now as per plan.
-        
         $roleAssigned = false;
         if ($test->passed && $test->specialization->discord_role_id) {
              $discord->assignRole(
@@ -27,12 +23,15 @@ class ResultController extends Controller
             $roleAssigned = true;
         }
 
-        return view('results.show', compact('test', 'roleAssigned'));
+        return response()->json([
+            'test' => $test,
+            'role_assigned' => $roleAssigned
+        ]);
     }
     
     public function history()
     {
         $tests = auth()->user()->tests()->with('specialization')->latest()->get();
-        return view('results.history', compact('tests'));
+        return response()->json($tests);
     }
 }

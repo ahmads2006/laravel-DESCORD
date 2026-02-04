@@ -10,7 +10,7 @@ class LanguageController extends Controller
     public function index()
     {
         $languages = Language::where('is_active', true)->get();
-        return view('language.index', compact('languages'));
+        return response()->json($languages);
     }
 
     public function store(Request $request)
@@ -22,6 +22,6 @@ class LanguageController extends Controller
         $user = auth()->user();
         $user->update(['language_id' => $request->language_id]);
 
-        return redirect()->route('specialization.select');
+        return response()->json(['message' => 'Language updated successfully', 'user' => $user]);
     }
 }

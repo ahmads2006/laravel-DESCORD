@@ -12,15 +12,17 @@ class AuthController extends Controller
 {
     public function redirect()
     {
-        return Socialite::driver('discord')->scopes(['identify', 'email'])->redirect();
+        return response()->json([
+            'url' => Socialite::driver('discord')->scopes(['identify', 'email'])->stateless()->redirect()->getTargetUrl(),
+        ]);
     }
 
-    public function callback(DiscordOAuthService $oauth)
+    public function callback()
     {
         try {
-            $discordUser = $oauth->user();
+            $discordUser = Socialite::driver('discord')->stateless()->user();
         } catch (\Exception $e) {
-            return redirect()->route('login')->with('error', 'Failed to login with Discord.');
+            return response()->json(['error' => 'Failed to login with Discord.'], 401);
         }
 
         $user = User::updateOrCreate(
@@ -30,17 +32,22 @@ class AuthController extends Controller
                 'discord_avatar' => $discordUser->avatar,
                 'discord_email' => $discordUser->email,
                 'email' => $discordUser->email,
-                // We don't really have a password for them, so we can leave it null or set loose one if needed.
-                // Or make password nullable in DB (it usually is for social login users if configured right, or use a dummy)
-                // Default create_users_table makes it string, not nullable. 
-                // I should probably set a dummy password.
                 'password' => bcrypt(str()->random(24)),
                 'name' => $discordUser->name ?? 'Discord User',
             ]
         );
 
-        Auth::login($user);
+        $token = $user->createToken('auth_token')->plainTextToken;
 
-        return redirect()->route('language.select');
+        return response()->json([
+            'token' => $token,
+            'user' => $user
+        ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['message' => 'Logged out successfully']);
     }
 }
